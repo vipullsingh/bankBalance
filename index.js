@@ -26,7 +26,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Import and use routes from controller
-const blogRoutes = require('./controllers/blog');
+const blogRoutes = require('./controllers/blogController');
 
 app.use('/blogs', blogRoutes);
 
