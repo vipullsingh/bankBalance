@@ -1,0 +1,59 @@
+db.users.aggregate([
+  // Join users and transactions collections on user_id
+  {
+    $lookup: {
+      from: "transactions",
+      localField: "_id",
+      foreignField: "user_id",
+      as: "transactions"
+    }
+  },
+  // Unwind transactions array
+  {
+    $unwind: "$transactions"
+  },
+  // Group by user_id and calculate sum of deposits and withdrawals
+  {
+    $group: {
+      _id: "$_id",
+      name: { $first: "$name" },
+      profession: { $first: "$profession" },
+      salary: { $first: "$salary" },
+      totalDeposits: {
+        $sum: {
+          $cond: {
+            if: { $eq: ["$transactions.type", "deposit"] },
+            then: "$transactions.amount",
+            else: 0
+          }
+        }
+      },
+      totalWithdrawals: {
+        $sum: {
+          $cond: {
+            if: { $eq: ["$transactions.type", "withdraw"] },
+            then: "$transactions.amount",
+            else: 0
+          }
+        }
+      }
+    }
+  },
+  // Calculate total bank balance for each user
+  {
+    $addFields: {
+      totalBalance: { $subtract: ["$totalDeposits", "$totalWithdrawals"] }
+    }
+  },
+  // Sort by total bank balance in descending order
+  {
+    $sort: { totalBalance: -1 }
+  },
+  // Project only name and totalBalance fields in output
+  {
+    $project: {
+      _id: "$name",
+      totalBalance: 1
+    }
+  }
+])
